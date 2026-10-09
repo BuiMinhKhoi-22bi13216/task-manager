@@ -1,0 +1,29 @@
+# Cấu hình đóng gói
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Thông tin dự án
+[project]
+name = "task-manager-internship"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+# Vị trí package
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Quy tắc Ruff
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+# Quy tắc Mypy
+[tool.mypy]
+files = ["src"]
+mypy_path = "src"
+explicit_package_bases = true
+check_untyped_defs = true

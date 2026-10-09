@@ -1,0 +1,17 @@
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Ruff and Mypy cache
+.ruff_cache/
+.mypy_cache/
+
+# Python package build metadata
+*.egg-info/
+
+# Local VS Code settings
+.vscode/
