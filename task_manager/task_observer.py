@@ -8,18 +8,14 @@ if TYPE_CHECKING:
 
 
 class TaskObserver(ABC):
-
     @abstractmethod
     def update(self, task: "Task", message: str) -> None:
         pass
 
 
 class NotifierObserver(TaskObserver):
-
     def __init__(self, notifier: Notifier):
         self._notifier = notifier
 
     def update(self, task: "Task", message: str) -> None:
-        self._notifier.send(
-            f'Task "{task.title}" {message}'
-        )
+        self._notifier.send(f'Task "{task.title}" {message}')

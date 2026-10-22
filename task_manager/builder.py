@@ -1,17 +1,10 @@
-from datetime import date
-from typing import Optional
-from .exceptions import TaskLockedError
+from datetime import date, datetime
 
-from .models import (
-    Task,
-    User,
-    TaskStatus,
-    TaskPriority
-)
+from .exceptions import TaskLockedError
+from .models import Task, TaskPriority, TaskStatus, User
 
 
 class TaskBuilder:
-
     def __init__(self, title: str, assignee: User):
         self.title = title
         self.assignee = assignee
@@ -19,12 +12,13 @@ class TaskBuilder:
         self.task_type = "general"
         self.priority = TaskPriority.MEDIUM
         self.description = ""
-        self.deadline = None
-        self.created_at = None
-        self._locked_values = None
+
+        self.deadline: date | None = None
+        self.created_at: datetime | None = None
+        self._locked_values: dict[str, object] | None = None
 
     @classmethod
-    def from_task(cls, task: Task):
+    def from_task(cls, task: Task) -> "TaskBuilder":
         builder = cls(task.title, task.assignee)
 
         builder.status = task.status
@@ -33,48 +27,44 @@ class TaskBuilder:
         builder.description = task.description
         builder.deadline = task.deadline
         builder.created_at = task.created_at
+
         if task.status == TaskStatus.DONE:
             builder._locked_values = {
-                name: getattr(task, name)
-                for name in Task._LOCKED_FIELDS | {"status"}
+                name: getattr(task, name) for name in Task._LOCKED_FIELDS | {"status"}
             }
 
         return builder
 
-    def set_description(self, description: str):
+    def set_description(self, description: str) -> "TaskBuilder":
         self.description = description
         return self
 
-    def set_priority(self, priority: TaskPriority):
+    def set_priority(self, priority: TaskPriority) -> "TaskBuilder":
         self.priority = priority
         return self
 
-    def set_deadline(self, deadline: Optional[date]):
+    def set_deadline(self, deadline: date | None) -> "TaskBuilder":
         self.deadline = deadline
         return self
 
-    
     def build(self) -> Task:
-        # Rebuild a DONE task unchanged; reopen the source before editing it.
         if self._locked_values is not None:
             for name, original in self._locked_values.items():
                 if getattr(self, name) != original:
-                    raise TaskLockedError(self._locked_values["title"], name)
-        created_at_kwargs = {}
+                    raise TaskLockedError(
+                        str(self._locked_values["title"]),
+                        name,
+                    )
 
-        if self.created_at is not None:
-            created_at_kwargs["created_at"] = self.created_at
+        created_at = self.created_at if self.created_at is not None else datetime.now()
 
         return Task(
             title=self.title,
             assignee=self.assignee,
             status=self.status,
-            task_type=self.task_type,
             priority=self.priority,
+            task_type=self.task_type,
             description=self.description,
             deadline=self.deadline,
-            **created_at_kwargs
+            created_at=created_at,
         )
-
-
-    

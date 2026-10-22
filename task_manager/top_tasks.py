@@ -2,7 +2,7 @@ import heapq
 from datetime import date, datetime
 from typing import Iterable
 
-from task_manager.models import Task, TaskStatus, PRIORITY_RANK
+from task_manager.models import PRIORITY_RANK, Task, TaskStatus
 
 
 def urgency_key(task: Task) -> tuple[int, bool, date, datetime]:

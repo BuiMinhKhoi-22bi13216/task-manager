@@ -1,4 +1,5 @@
 """Day 7 Phase 1 tests"""
+
 import random
 import unittest
 from datetime import date, datetime, timedelta
@@ -21,8 +22,12 @@ class TestTopTasks(unittest.TestCase):
         created_at: datetime | None = None,
     ) -> Task:
         return Task(
-            title=title, assignee=self.user, priority=priority, status=status,
-            deadline=deadline, created_at=created_at or self.base_time,
+            title=title,
+            assignee=self.user,
+            priority=priority,
+            status=status,
+            deadline=deadline,
+            created_at=created_at or self.base_time,
         )
 
     def assert_same_objects(self, actual, expected):
@@ -38,7 +43,9 @@ class TestTopTasks(unittest.TestCase):
         missing = self.make_task("none", deadline=None)
         late = self.make_task("late", deadline=date(2026, 12, 10))
         early = self.make_task("early", deadline=date(2026, 11, 1))
-        self.assert_same_objects(top_tasks([missing, late, early]), [early, late, missing])
+        self.assert_same_objects(
+            top_tasks([missing, late, early]), [early, late, missing]
+        )
 
     def test_older_created_at_first(self):
         newer = self.make_task("new", created_at=datetime(2026, 10, 22))
@@ -49,7 +56,9 @@ class TestTopTasks(unittest.TestCase):
         done = self.make_task("done", TaskPriority.HIGH, TaskStatus.DONE)
         todo = self.make_task("todo", TaskPriority.MEDIUM)
         self.assert_same_objects(top_tasks([done, todo]), [todo])
-        self.assert_same_objects(top_tasks([done, todo], include_done=True), [done, todo])
+        self.assert_same_objects(
+            top_tasks([done, todo], include_done=True), [done, todo]
+        )
 
     def test_zero_and_negative_n(self):
         task = self.make_task("one")
@@ -66,8 +75,10 @@ class TestTopTasks(unittest.TestCase):
         self.assert_same_objects(top_tasks(tasks, 3), tasks[:3])
 
     def test_input_unchanged(self):
-        tasks = [self.make_task("low", TaskPriority.LOW),
-                 self.make_task("high", TaskPriority.HIGH)]
+        tasks = [
+            self.make_task("low", TaskPriority.LOW),
+            self.make_task("high", TaskPriority.HIGH),
+        ]
         before = [id(x) for x in tasks]
         top_tasks(tasks, 1)
         self.assertEqual([id(x) for x in tasks], before)
@@ -80,13 +91,18 @@ class TestTopTasks(unittest.TestCase):
         for i in range(500):
             deadline = (
                 date(2026, 11, 1) + timedelta(days=randomizer.randrange(20))
-                if randomizer.randrange(3) else None
+                if randomizer.randrange(3)
+                else None
             )
-            tasks.append(self.make_task(
-                str(i), priority=randomizer.choice(priorities),
-                status=randomizer.choice(statuses), deadline=deadline,
-                created_at=self.base_time + timedelta(days=randomizer.randrange(8)),
-            ))
+            tasks.append(
+                self.make_task(
+                    str(i),
+                    priority=randomizer.choice(priorities),
+                    status=randomizer.choice(statuses),
+                    deadline=deadline,
+                    created_at=self.base_time + timedelta(days=randomizer.randrange(8)),
+                )
+            )
         expected = sorted(
             (t for t in tasks if t.status != TaskStatus.DONE),
             key=urgency_key,

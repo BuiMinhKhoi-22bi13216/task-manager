@@ -1,11 +1,11 @@
 from datetime import date
 
-from .models import User, TaskPriority, Task
-from .task_factory import TaskFactory
 from .builder import TaskBuilder
-from .project import Project
 from .external_sms import ExternalSMSService
+from .models import Task, TaskPriority, User
+from .project import Project
 from .sms_adapter import SMSAdapter
+from .task_factory import TaskFactory
 
 
 def main():
@@ -17,11 +17,7 @@ def main():
     project = Project("Intern Project")
 
     # 2. Factory tao Task
-    bug = TaskFactory.create_task(
-        "bug",
-        "Fix login",
-        user1
-    )
+    bug = TaskFactory.create_task("bug", "Fix login", user1)
 
     print("Factory:", bug.task_type, bug.priority)
 
@@ -41,14 +37,9 @@ def main():
     # 5. Adapter gui SMS
     sms_service = ExternalSMSService()
 
-    notifier = SMSAdapter(
-        sms_service,
-        "0901234567"
-    )
+    notifier = SMSAdapter(sms_service, "0901234567")
 
-    notifier.send(
-        f"New {task.task_type} task: {task.title}"
-    )
+    notifier.send(f"New {task.task_type} task: {task.title}")
 
     # 6. Kiem tra ket qua
     assert isinstance(task, Task)
@@ -58,12 +49,7 @@ def main():
     assert task.deadline == date(2026, 10, 20)
     assert task in project.tasks
 
-    assert sms_service.sent_messages == [
-        (
-            "0901234567",
-            "New bug task: Fix login"
-        )
-    ]
+    assert sms_service.sent_messages == [("0901234567", "New bug task: Fix login")]
 
     print("INTEGRATION TEST: PASS")
 

@@ -1,38 +1,26 @@
 import unittest
 from datetime import date, datetime
 
-from task_manager.models import (
-    User, Task, TaskStatus, TaskPriority
-)
+from task_manager.models import Task, TaskPriority, TaskStatus, User
 from task_manager.project import Project
-from task_manager.task_service import TaskService
 from task_manager.strategies import (
-    PrioritySortStrategy,
+    CreatedAtSortStrategy,
     DeadlineSortStrategy,
-    CreatedAtSortStrategy
+    PrioritySortStrategy,
 )
+from task_manager.task_service import TaskService
 
 
 class TestStrategies(unittest.TestCase):
-
     def setUp(self):
         user = User("Khoi")
         self.project = Project("AI Camera")
 
-        self.task1 = Task(
-            "Learn Python", user,
-            TaskStatus.TODO, TaskPriority.HIGH
-        )
+        self.task1 = Task("Learn Python", user, TaskStatus.TODO, TaskPriority.HIGH)
 
-        self.task2 = Task(
-            "Learn Docker", user,
-            TaskStatus.TODO, TaskPriority.MEDIUM
-        )
+        self.task2 = Task("Learn Docker", user, TaskStatus.TODO, TaskPriority.MEDIUM)
 
-        self.task3 = Task(
-            "Learn Git", user,
-            TaskStatus.TODO, TaskPriority.LOW
-        )
+        self.task3 = Task("Learn Git", user, TaskStatus.TODO, TaskPriority.LOW)
 
         self.task1.deadline = date(2026, 10, 25)
         self.task2.deadline = date(2026, 10, 20)
@@ -50,8 +38,7 @@ class TestStrategies(unittest.TestCase):
         result = service.get_sorted_tasks(self.project)
 
         self.assertEqual(
-            [t.title for t in result],
-            ["Learn Python", "Learn Docker", "Learn Git"]
+            [t.title for t in result], ["Learn Python", "Learn Docker", "Learn Git"]
         )
 
     def test_deadline_sort(self):
@@ -59,8 +46,7 @@ class TestStrategies(unittest.TestCase):
         result = service.get_sorted_tasks(self.project)
 
         self.assertEqual(
-            [t.title for t in result],
-            ["Learn Docker", "Learn Python", "Learn Git"]
+            [t.title for t in result], ["Learn Docker", "Learn Python", "Learn Git"]
         )
 
     def test_created_at_sort(self):
@@ -68,8 +54,7 @@ class TestStrategies(unittest.TestCase):
         result = service.get_sorted_tasks(self.project)
 
         self.assertEqual(
-            [t.title for t in result],
-            ["Learn Docker", "Learn Python", "Learn Git"]
+            [t.title for t in result], ["Learn Docker", "Learn Python", "Learn Git"]
         )
 
     def test_switch_strategy(self):

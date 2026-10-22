@@ -1,10 +1,11 @@
 import unittest
-from task_manager.models import User, Task, TaskStatus, TaskPriority
+
+from task_manager.exceptions import InvalidStatusTransitionError
+from task_manager.models import Task, TaskPriority, TaskStatus, User
 from task_manager.notifier import Notifier
 from task_manager.strategies import PrioritySortStrategy
-from task_manager.task_service import TaskService
 from task_manager.task_observer import NotifierObserver
-from task_manager.exceptions import InvalidStatusTransitionError
+from task_manager.task_service import TaskService
 
 
 class SpyNotifier(Notifier):
@@ -43,7 +44,7 @@ class TestObserver(unittest.TestCase):
 
         self.assertEqual(self.task.status, TaskStatus.DONE)
         self.assertEqual(self.spy.messages, [])
- 
+
     def test_same_status_does_not_notify(self):
         self.task.change_status(TaskStatus.TODO)
         self.assertEqual(self.spy.messages, [])
@@ -54,7 +55,9 @@ class TestObserver(unittest.TestCase):
         self.assertIn("Khoi -> An", self.spy.messages[0])
 
     def test_unsubscribe(self):
-        second_task = Task("Learn Docker", User("Khoi"), TaskStatus.TODO, TaskPriority.LOW)
+        second_task = Task(
+            "Learn Docker", User("Khoi"), TaskStatus.TODO, TaskPriority.LOW
+        )
         observer = NotifierObserver(self.spy)
         second_task.subscribe(observer)
         second_task.unsubscribe(observer)
@@ -73,7 +76,7 @@ class TestObserver(unittest.TestCase):
         b.messages.clear()
 
         task.complete()
-        
+
         self.assertEqual(len(a.messages), 1)
         self.assertEqual(len(b.messages), 1)
 

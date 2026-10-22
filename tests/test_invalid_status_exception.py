@@ -1,26 +1,19 @@
 import unittest
 
-from task_manager.models import (
-    Task, User, TaskStatus, TaskPriority
-)
-from task_manager.exceptions import (
-    InvalidStatusTransitionError
-)
+from task_manager.exceptions import InvalidStatusTransitionError
+from task_manager.models import Task, TaskPriority, TaskStatus, User
 
 
 class TestInvalidStatusException(unittest.TestCase):
-
     def test_done_cannot_return_to_todo(self):
         task = Task(
             title="Fix login",
             assignee=User("An"),
             status=TaskStatus.DONE,
-            priority=TaskPriority.HIGH
+            priority=TaskPriority.HIGH,
         )
 
-        with self.assertRaises(
-            InvalidStatusTransitionError
-        ) as context:
+        with self.assertRaises(InvalidStatusTransitionError) as context:
             task.change_status(TaskStatus.TODO)
 
         error = context.exception
@@ -34,27 +27,23 @@ class TestInvalidStatusException(unittest.TestCase):
             title="Write API",
             assignee=User("An"),
             status=TaskStatus.IN_PROGRESS,
-            priority=TaskPriority.MEDIUM
+            priority=TaskPriority.MEDIUM,
         )
 
         with self.assertRaises(InvalidStatusTransitionError):
             task.change_status(TaskStatus.TODO)
 
-        self.assertEqual(
-            task.status, TaskStatus.IN_PROGRESS
-        )
+        self.assertEqual(task.status, TaskStatus.IN_PROGRESS)
 
     def test_todo_cannot_go_directly_to_done(self):
         task = Task(
             title="Learn Python",
             assignee=User("An"),
             status=TaskStatus.TODO,
-            priority=TaskPriority.HIGH
-    )
+            priority=TaskPriority.HIGH,
+        )
 
-        with self.assertRaises(
-            InvalidStatusTransitionError
-    ):
+        with self.assertRaises(InvalidStatusTransitionError):
             task.change_status(TaskStatus.DONE)
 
         self.assertEqual(task.status, TaskStatus.TODO)

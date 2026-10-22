@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: task-manager-internship
+Version: 0.2.0
+Summary: Python OOP Task Manager internship project
+Requires-Python: >=3.10
+Provides-Extra: dev
+Requires-Dist: ruff<1,>=0.17; extra == "dev"
+Requires-Dist: mypy<3,>=2.4; extra == "dev"

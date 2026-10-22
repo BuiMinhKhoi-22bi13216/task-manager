@@ -6,8 +6,8 @@ from task_manager.commands import (
     ChangeStatusCommand,
     CommandManager,
 )
-from task_manager.models import Task, TaskPriority, TaskStatus, User
 from task_manager.exceptions import InvalidStatusTransitionError
+from task_manager.models import Task, TaskPriority, TaskStatus, User
 
 
 class TestCommands(unittest.TestCase):
@@ -50,14 +50,12 @@ class TestCommands(unittest.TestCase):
         self.task.change_status(TaskStatus.DONE)
 
         with self.assertRaises(InvalidStatusTransitionError):
-            self.manager.execute(
-                ChangeStatusCommand(self.task, TaskStatus.TODO)
-        )
+            self.manager.execute(ChangeStatusCommand(self.task, TaskStatus.TODO))
 
         self.assertEqual(self.manager.history_size, 0)
         self.assertFalse(self.manager.undo_last())
         self.assertEqual(self.task.status, TaskStatus.DONE)
-    
+
     def test_noop_not_saved(self):
         self.assertFalse(
             self.manager.execute(ChangeStatusCommand(self.task, TaskStatus.TODO))

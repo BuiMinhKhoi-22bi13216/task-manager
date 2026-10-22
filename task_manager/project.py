@@ -1,9 +1,10 @@
 from .decorator import log_execution_time
 from .models import Task
 
+
 class Project:
     def __init__(self, name):
-        self.name = name 
+        self.name = name
         self.tasks = []
 
     @log_execution_time
@@ -11,6 +12,3 @@ class Project:
         if not isinstance(task, Task):
             raise TypeError("task must be Task")
         self.tasks.append(task)
-
-      
-           

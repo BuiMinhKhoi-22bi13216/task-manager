@@ -1,60 +1,69 @@
-"""Benchmark 100.000 task: tim bang list va dict qua TaskStorage.
-
-Chay tu thu muc goc: python -m task_manager.benchmark_search
-Van ho tro: cd task_manager && python benchmark_search.py
-Tu dong xuat benchmark_ket_qua_ngay7.csv trong cung thu muc.
-"""
+"""So sánh tìm kiếm bằng list và dict với 100.000 task."""
 
 import csv
+import sys
+from collections.abc import Callable
 from pathlib import Path
 from statistics import median
 from time import perf_counter
 
-if __package__:
-    from .task_storage import TaskStorage
-else:
-    from task_storage import TaskStorage
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from task_manager.task_storage import TaskStorage
 
 TASK_COUNT = 100_000
 
 
 def create_sample_tasks(count: int) -> list[dict]:
-    """Du lieu mau chi dung de benchmark, khong sua domain Task Manager."""
     return [
-        {"id": task_id, "title": f"Task {task_id}"}
-        for task_id in range(1, count + 1)
+        {"id": task_id, "title": f"Task {task_id}"} for task_id in range(1, count + 1)
     ]
 
 
-def find_task_in_list(tasks: list[dict], task_id: int) -> dict | None:
-    """Tim tuan tu (O(n) trong truong hop xau nhat)."""
+def find_task_in_list(
+    tasks: list[dict],
+    task_id: int,
+) -> dict | None:
     for task in tasks:
         if task["id"] == task_id:
             return task
+
     return None
 
 
-def measure_microseconds(action, repetitions: int, rounds: int = 5) -> float:
-    """Thoi gian trung vi cho moi lan goi, micro giay (us)."""
+def measure_microseconds(
+    action: Callable[[], object],
+    repetitions: int,
+    rounds: int = 5,
+) -> float:
     samples = []
+
     for _ in range(rounds):
         start = perf_counter()
+
         for _ in range(repetitions):
             action()
-        samples.append((perf_counter() - start) * 1_000_000 / repetitions)
+
+        elapsed = perf_counter() - start
+        samples.append(elapsed * 1_000_000 / repetitions)
+
     return median(samples)
 
 
 def main() -> None:
     tasks = create_sample_tasks(TASK_COUNT)
-
     storage = TaskStorage()
+
     start = perf_counter()
+
     for task in tasks:
         storage.add_task(task["id"], task)
+
     build_ms = (perf_counter() - start) * 1000
 
     assert len(tasks) == len(storage) == TASK_COUNT
+
     cases = [
         ("Dau danh sach", 1),
         ("Giua danh sach", TASK_COUNT // 2),
@@ -65,32 +74,50 @@ def main() -> None:
     print(f"So task: {TASK_COUNT:,}")
     print(f"Thoi gian xay dict: {build_ms:.3f} ms")
     print(f"{'Truong hop':<20} {'List (us)':>12} {'Dict (us)':>12} {'Nhanh hon':>12}")
+
     results = []
+
     for label, task_id in cases:
-        # Dam bao hai cach tim cung mot ket qua truoc khi so toc do.
         assert find_task_in_list(tasks, task_id) == storage.get_task(task_id)
 
         list_us = measure_microseconds(
-            lambda: find_task_in_list(tasks, task_id), repetitions=30
+            lambda: find_task_in_list(tasks, task_id),
+            repetitions=30,
         )
+
         dict_us = measure_microseconds(
-            lambda: storage.get_task(task_id), repetitions=20_000
+            lambda: storage.get_task(task_id),
+            repetitions=20_000,
         )
-        ratio = list_us / dict_us if dict_us else float('inf')
+
+        ratio = list_us / dict_us if dict_us else float("inf")
+
         print(f"{label:<20} {list_us:>12.3f} {dict_us:>12.3f} {ratio:>11.1f}x")
-        results.append({
-            "truong_hop": label,
-            "task_id": task_id,
-            "list_us": round(list_us, 4),
-            "dict_us": round(dict_us, 4),
-            "nhanh_hon_lan": round(ratio, 2),
-        })
+
+        results.append(
+            {
+                "truong_hop": label,
+                "task_id": task_id,
+                "list_us": round(list_us, 4),
+                "dict_us": round(dict_us, 4),
+                "nhanh_hon_lan": round(ratio, 2),
+            }
+        )
 
     output = Path(__file__).with_name("benchmark_ket_qua_ngay7.csv")
-    with output.open("w", newline="", encoding="utf-8-sig") as file:
-        writer = csv.DictWriter(file, fieldnames=results[0].keys())
+
+    with output.open(
+        "w",
+        newline="",
+        encoding="utf-8-sig",
+    ) as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=results[0].keys(),
+        )
         writer.writeheader()
         writer.writerows(results)
+
     print(f"Da luu ket qua: {output.name}")
 
 
