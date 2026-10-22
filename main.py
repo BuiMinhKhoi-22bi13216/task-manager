@@ -1,5 +1,4 @@
 from datetime import date, datetime
-
 from task_manager.commands import (
     AssignTaskCommand,
     ChangeStatusCommand,
