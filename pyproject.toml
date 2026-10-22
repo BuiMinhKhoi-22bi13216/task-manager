@@ -1,19 +1,25 @@
-# Cấu hình đóng gói
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
-# Thông tin dự án
 [project]
-name = "task-manager-internship"
-version = "0.1.0"
+name = "task-manager"
+version = "0.2.0"
+description = "Python OOP Task Manager internship project"
 requires-python = ">=3.10"
 
-# Vị trí package
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.optional-dependencies]
+dev = ["ruff>=0.17,<1", "mypy>=2.4,<3"]
 
-# Quy tắc Ruff
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["task_manager*"]
+exclude = ["tests*"]
+namespaces = false
+
 [tool.ruff]
 target-version = "py310"
 line-length = 88
@@ -21,9 +27,7 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
-# Quy tắc Mypy
 [tool.mypy]
-files = ["src"]
-mypy_path = "src"
-explicit_package_bases = true
+python_version = "3.10"
+files = ["task_manager", "main.py"]
 check_untyped_defs = true
