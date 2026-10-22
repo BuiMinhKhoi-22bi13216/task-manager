@@ -6,16 +6,21 @@ def _label(value: Any) -> str:
 
 
 class TaskManagerError(Exception):
-    """Base class for Task Manager domain errors."""
+    """Lỗi nghiệp vụ chung của Task Manager."""
+
     pass
 
 
 class CommandStateError(TaskManagerError, RuntimeError):
-    """Invalid command lifecycle; keeps RuntimeError compatibility."""
+    """Command được sử dụng không đúng trạng thái."""
+
+    pass
 
 
 class UndoConflictError(CommandStateError):
-    """The task changed after this command's recorded state."""
+    """Dữ liệu hiện tại không phù hợp để undo."""
+
+    pass
 
 
 class TaskNotFoundError(TaskManagerError):
@@ -40,11 +45,8 @@ class InvalidStatusTransitionError(TaskManagerError):
         self.task_title = task_title
 
     def __str__(self) -> str:
-        subject = (
-            f'Task "{self.task_title}"'
-            if self.task_title
-            else "Task"
-        )
+        subject = f'Task "{self.task_title}"' if self.task_title else "Task"
+
         return (
             f"{subject}: cannot change status from "
             f"{_label(self.current)} to {_label(self.requested)}"
@@ -64,25 +66,19 @@ class PermissionDeniedError(TaskManagerError):
         self.task_title = task_title
 
     def __str__(self) -> str:
-        target = (
-            f' on task "{self.task_title}"'
-            if self.task_title
-            else ""
-        )
-        return (
-            f"User {self.user_name!r} is not allowed to "
-            f"{self.action}{target}"
-        )
+        target = f' on task "{self.task_title}"' if self.task_title else ""
+
+        return f"User {self.user_name!r} is not allowed to {self.action}{target}"
 
 
 class TaskLockedError(TaskManagerError):
-    def __init__(self, task_title, field_name):
+    def __init__(self, task_title: str, field_name: str) -> None:
         super().__init__(task_title, field_name)
         self.task_title = task_title
         self.field_name = field_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f'Task "{self.task_title}" is DONE. '
-            f'Reopen before editing {self.field_name}.'
-        )    
+            f"Reopen before editing {self.field_name}."
+        )
