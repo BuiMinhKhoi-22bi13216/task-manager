@@ -1,6 +1,7 @@
 """Benchmark 100.000 task: tim bang list va dict qua TaskStorage.
 
-Chay: python3 benchmark_search.py
+Chay tu thu muc goc: python -m task_manager.benchmark_search
+Van ho tro: cd task_manager && python benchmark_search.py
 Tu dong xuat benchmark_ket_qua_ngay7.csv trong cung thu muc.
 """
 
@@ -9,7 +10,10 @@ from pathlib import Path
 from statistics import median
 from time import perf_counter
 
-from task_storage import TaskStorage
+if __package__:
+    from .task_storage import TaskStorage
+else:
+    from task_storage import TaskStorage
 
 TASK_COUNT = 100_000
 

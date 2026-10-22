@@ -1,10 +1,10 @@
 import unittest
-
 from task_manager.models import User, Task, TaskStatus, TaskPriority
 from task_manager.notifier import Notifier
 from task_manager.strategies import PrioritySortStrategy
 from task_manager.task_service import TaskService
 from task_manager.task_observer import NotifierObserver
+from task_manager.exceptions import InvalidStatusTransitionError
 
 
 class SpyNotifier(Notifier):
@@ -33,12 +33,17 @@ class TestObserver(unittest.TestCase):
         self.assertIn("TODO -> IN_PROGRESS", self.spy.messages[0])
 
     def test_invalid_change_does_not_notify(self):
+        self.task.change_status(TaskStatus.IN_PROGRESS)
         self.task.change_status(TaskStatus.DONE)
+
         self.spy.messages.clear()
-        self.task.change_status(TaskStatus.TODO)
+
+        with self.assertRaises(InvalidStatusTransitionError):
+            self.task.change_status(TaskStatus.TODO)
+
         self.assertEqual(self.task.status, TaskStatus.DONE)
         self.assertEqual(self.spy.messages, [])
-
+ 
     def test_same_status_does_not_notify(self):
         self.task.change_status(TaskStatus.TODO)
         self.assertEqual(self.spy.messages, [])
@@ -62,7 +67,13 @@ class TestObserver(unittest.TestCase):
         service = TaskService(PrioritySortStrategy(), [a, b])
         service.watch_task(task)
         service.watch_task(task)
+        task.change_status(TaskStatus.IN_PROGRESS)
+        # Xóa thông báo trước đó để chỉ kiểm tra sự kiện hoàn thành
+        a.messages.clear()
+        b.messages.clear()
+
         task.complete()
+        
         self.assertEqual(len(a.messages), 1)
         self.assertEqual(len(b.messages), 1)
 

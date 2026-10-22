@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from task_manager.models import Task, TaskPriority
+from task_manager.models import Task, PRIORITY_RANK
 from datetime import date
 
 
@@ -16,15 +16,9 @@ class PrioritySortStrategy(TaskSortStrategy):
 
     def sort(self, tasks: list[Task]) -> list[Task]:
 
-        priority_order = {
-            TaskPriority.HIGH: 3,
-            TaskPriority.MEDIUM: 2,
-            TaskPriority.LOW: 1
-        }
-
         return sorted(
             tasks,
-            key=lambda task: priority_order[task.priority],
+            key=lambda task: PRIORITY_RANK[task.priority],
             reverse=True
         )
 
