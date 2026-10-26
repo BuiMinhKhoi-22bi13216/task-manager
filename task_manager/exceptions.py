@@ -82,3 +82,11 @@ class TaskLockedError(TaskManagerError):
             f'Task "{self.task_title}" is DONE. '
             f"Reopen before editing {self.field_name}."
         )
+
+
+class DuplicateTaskError(TaskManagerError):
+    pass
+
+
+class InvalidTaskTypeError(TaskManagerError):
+    pass

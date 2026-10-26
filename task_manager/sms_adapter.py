@@ -7,5 +7,5 @@ class SMSAdapter(Notifier):
         self.sms_service = sms_service
         self.phone_number = phone_number
 
-    def send(self, message: str):
+    def send(self, message: str) -> None:
         self.sms_service.send_message(self.phone_number, message)

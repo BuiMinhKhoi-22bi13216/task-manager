@@ -181,11 +181,11 @@ class Task:
     def assign_to(self, user: User) -> None:
         self._validate_field("assignee", user)
 
-        if self.assignee == user:
-            return
-
         if self.status == TaskStatus.DONE:
             raise TaskLockedError(self.title, "assignee")
+
+        if self.assignee == user:
+            return
 
         message = f"assigned: {self.assignee.name} -> {user.name}"
 

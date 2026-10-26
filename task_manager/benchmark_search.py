@@ -10,25 +10,24 @@ from time import perf_counter
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from task_manager.models import Task, TaskPriority, TaskStatus, User
 from task_manager.task_storage import TaskStorage
 
 TASK_COUNT = 100_000
 
 
-def create_sample_tasks(count: int) -> list[dict]:
+def create_sample_tasks(count: int) -> list[tuple[int, Task]]:
+    user = User("Benchmark")
     return [
-        {"id": task_id, "title": f"Task {task_id}"} for task_id in range(1, count + 1)
+        (task_id, Task(f"Task {task_id}", user, TaskStatus.TODO, TaskPriority.MEDIUM))
+        for task_id in range(1, count + 1)
     ]
 
 
-def find_task_in_list(
-    tasks: list[dict],
-    task_id: int,
-) -> dict | None:
-    for task in tasks:
-        if task["id"] == task_id:
+def find_task_in_list(tasks: list[tuple[int, Task]], task_id: int) -> Task | None:
+    for current_id, task in tasks:
+        if current_id == task_id:
             return task
-
     return None
 
 
@@ -57,8 +56,8 @@ def main() -> None:
 
     start = perf_counter()
 
-    for task in tasks:
-        storage.add_task(task["id"], task)
+    for task_id, task in tasks:
+        storage.add_task(task_id, task)
 
     build_ms = (perf_counter() - start) * 1000
 
@@ -78,7 +77,7 @@ def main() -> None:
     results = []
 
     for label, task_id in cases:
-        assert find_task_in_list(tasks, task_id) == storage.get_task(task_id)
+        assert find_task_in_list(tasks, task_id) == storage.find_task(task_id)
 
         list_us = measure_microseconds(
             lambda: find_task_in_list(tasks, task_id),
@@ -86,7 +85,7 @@ def main() -> None:
         )
 
         dict_us = measure_microseconds(
-            lambda: storage.get_task(task_id),
+            lambda: storage.find_task(task_id),
             repetitions=20_000,
         )
 

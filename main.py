@@ -1,4 +1,5 @@
 from datetime import date, datetime
+
 from task_manager.commands import (
     AssignTaskCommand,
     ChangeStatusCommand,
@@ -35,8 +36,9 @@ def main() -> None:
         priority=TaskPriority.MEDIUM,
     )
 
-    project1.add_task(task1)
+    task1_id = project1.add_task(task1)
     project1.add_task(task2)
+    print("Find by ID:", project1.get_task(task1_id).title)
 
     console1 = ConsoleNotifier()
     email1 = EmailNotifier()

@@ -1,3 +1,4 @@
+from .exceptions import InvalidTaskTypeError
 from .models import Task, TaskPriority, TaskStatus, User
 
 
@@ -15,7 +16,7 @@ class TaskFactory:
         }
 
         if task_type not in priorities:
-            raise ValueError("Invalid task type")
+            raise InvalidTaskTypeError(f"Invalid task type: {task_type!r}")
 
         return Task(
             title=title,
