@@ -7,6 +7,7 @@ name = "task-manager"
 version = "0.2.0"
 description = "Python OOP Task Manager internship project"
 requires-python = ">=3.10"
+dependencies = ["sqlalchemy>=2.0,<3"]
 
 [project.optional-dependencies]
 dev = ["ruff>=0.17,<1", "mypy>=2.4,<3"]
