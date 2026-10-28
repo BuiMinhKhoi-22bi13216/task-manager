@@ -1,10 +1,12 @@
 from collections.abc import Iterable
 
+from task_manager.exceptions import TaskManagerError, TaskNotFoundError
 from task_manager.models import Task
 from task_manager.notifier import Notifier
 from task_manager.project import Project
 from task_manager.strategies import TaskSortStrategy
 from task_manager.task_observer import NotifierObserver
+from task_manager.task_repository_port import TaskRepositoryPort
 
 
 class TaskService:
@@ -12,15 +14,28 @@ class TaskService:
         self,
         strategy: TaskSortStrategy,
         notifiers: Iterable[Notifier] = (),
+        repository: TaskRepositoryPort | None = None,
     ):
         self._strategy = strategy
-        self._observers = [NotifierObserver(notifier) for notifier in notifiers]
+        self._observers = [
+            NotifierObserver(notifier)
+            for notifier in notifiers
+        ]
+        self._repository = repository
 
     def set_strategy(self, strategy: TaskSortStrategy) -> None:
         self._strategy = strategy
 
     def get_sorted_tasks(self, project: Project) -> list[Task]:
-        return self._strategy.sort(project.tasks)
+        if self._repository is None:
+            tasks = project.tasks
+        else:
+            tasks = self._repository.list(project.name)
+
+            for task in tasks:
+                self.watch_task(task)
+
+        return self._strategy.sort(tasks)
 
     def watch_task(self, task: Task) -> None:
         for observer in self._observers:
@@ -30,6 +45,31 @@ class TaskService:
         for task in project.tasks:
             self.watch_task(task)
 
-    def add_task(self, project: Project, task: Task) -> None:
-        project.add_task(task)
+    def add_task(self, project: Project, task: Task) -> int:
+        if self._repository is None:
+            task_id = project.add_task(task)
+        else:
+            task_id = self._repository.add(project.name, task)
+
         self.watch_task(task)
+        return task_id
+
+    def _get_repository(self) -> TaskRepositoryPort:
+        if self._repository is None:
+            raise TaskManagerError(
+                "Chưa truyền Repository cho TaskService"
+            )
+
+        return self._repository
+
+    def get_task(self, task_id: int) -> Task:
+        task = self._get_repository().get_by_id(task_id)
+
+        if task is None:
+            raise TaskNotFoundError(task_id)
+
+        self.watch_task(task)
+        return task
+
+    def update_task(self, task_id: int, task: Task) -> None:
+        self._get_repository().update(task_id, task)
