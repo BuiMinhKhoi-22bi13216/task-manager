@@ -1,58 +1,94 @@
-from itertools import count
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from .exceptions import TaskNotFoundError
+from .routers import projects, tasks, users
 
 app = FastAPI(title="Task Manager")
 
 
-class TaskCreate(BaseModel):
-    title: str
-    description: str = ""
-    status: str = "TODO"
+@app.exception_handler(TaskNotFoundError)
+def task_not_found_handler(
+    request: Request,
+    exc: TaskNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": {
+                "code": "TASK_NOT_FOUND",
+                "message": str(exc),
+                "details": [],
+            }
+        },
+    )
 
 
-tasks: dict[int, dict[str, int | str]] = {}
-task_ids = count(1)
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    details: list[dict[str, object]] = []
 
-
-@app.get("/tasks")
-def list_tasks(
-    status: str | None = None,
-) -> list[dict[str, int | str]]:
-    if status is None:
-        return list(tasks.values())
-
-    result: list[dict[str, int | str]] = []
-
-    for task in tasks.values():
-        if task["status"] == status:
-            result.append(task)
-
-    return result
-
-
-@app.get("/tasks/{task_id}")
-def get_task(task_id: int) -> dict[str, int | str]:
-    if task_id not in tasks:
-        raise HTTPException(
-            status_code=404,
-            detail="Khong tim thay task",
+    for error in exc.errors():
+        details.append(
+            {
+                "location": list(error["loc"]),
+                "message": error["msg"],
+                "type": error["type"],
+            }
         )
 
-    return tasks[task_id]
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Dữ liệu đầu vào không hợp lệ",
+                "details": details,
+            }
+        },
+    )
 
 
-@app.post("/tasks", status_code=201)
-def create_task(task: TaskCreate) -> dict[str, int | str]:
-    task_id = next(task_ids)
+@app.exception_handler(StarletteHTTPException)
+def http_exception_handler(
+    request: Request,
+    exc: StarletteHTTPException,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        headers=exc.headers,
+        content={
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": str(exc.detail),
+                "details": [],
+            }
+        },
+    )
 
-    new_task: dict[str, int | str] = {
-        "id": task_id,
-        "title": task.title,
-        "description": task.description,
-        "status": task.status,
-    }
 
-    tasks[task_id] = new_task
-    return new_task
+@app.exception_handler(Exception)
+def unexpected_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Lỗi nội bộ server",
+                "details": [],
+            }
+        },
+    )
+
+
+app.include_router(tasks.router)
+app.include_router(projects.router)
+app.include_router(users.router)
