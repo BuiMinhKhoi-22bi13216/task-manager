@@ -10,6 +10,10 @@ class TaskManagerError(Exception):
 
     pass
 
+class InvalidDataError(TaskManagerError):
+    """Dữ liệu không đáp ứng quy tắc của ứng dụng."""
+
+    pass
 
 class CommandStateError(TaskManagerError, RuntimeError):
     """Command được sử dụng không đúng trạng thái."""

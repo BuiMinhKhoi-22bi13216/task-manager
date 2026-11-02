@@ -5,6 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from .exceptions import (
+    InvalidDataError,
     InvalidStatusTransitionError,
     TaskLockedError,
     UndoConflictError,
@@ -25,7 +26,7 @@ class User:
             raise TypeError("name must be str")
 
         if not self.name.strip():
-            raise ValueError("name must not be empty")
+            raise InvalidDataError("name must not be empty")
 
 
 class TaskStatus(Enum):
@@ -84,7 +85,7 @@ class Task:
                 raise TypeError(f"{name} must be str")
 
             if name != "description" and not value.strip():
-                raise ValueError(f"{name} must not be empty")
+                raise InvalidDataError(f"{name} must not be empty")
 
         elif name == "assignee" and not isinstance(value, User):
             raise TypeError("assignee must be User")
@@ -104,7 +105,9 @@ class Task:
                 raise TypeError("created_at must be datetime")
 
             if value.tzinfo is not None:
-                raise ValueError("created_at must be a naive local datetime")
+                raise InvalidDataError(
+                    "created_at must be a naive local datetime"
+                )
 
     def __post_init__(self) -> None:
         for name in self._LOCKED_FIELDS | {"status"}:
