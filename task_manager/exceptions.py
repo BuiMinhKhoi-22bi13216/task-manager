@@ -10,10 +10,12 @@ class TaskManagerError(Exception):
 
     pass
 
+
 class InvalidDataError(TaskManagerError):
     """Dữ liệu không đáp ứng quy tắc của ứng dụng."""
 
     pass
+
 
 class CommandStateError(TaskManagerError, RuntimeError):
     """Command được sử dụng không đúng trạng thái."""
@@ -94,3 +96,8 @@ class DuplicateTaskError(TaskManagerError):
 
 class InvalidTaskTypeError(TaskManagerError):
     pass
+
+
+class ProjectNotFoundError(TaskManagerError):
+    def __init__(self, project_id: int):
+        super().__init__(f"Project not found: {project_id}")

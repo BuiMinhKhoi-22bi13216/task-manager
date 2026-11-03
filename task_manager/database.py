@@ -16,6 +16,7 @@ SQL_ECHO = os.getenv("TASK_MANAGER_SQL_ECHO", "").lower() in {"1", "true", "yes"
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
     echo=SQL_ECHO,
+    connect_args={"check_same_thread": False},
 )
 
 

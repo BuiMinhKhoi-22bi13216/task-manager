@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from datetime import date, datetime
 
 from sqlalchemy import select
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from task_manager.exceptions import (
     InvalidTaskTypeError,
+    ProjectNotFoundError,
     TaskManagerError,
     TaskNotFoundError,
 )
@@ -25,15 +27,11 @@ class TaskRepository:
             )
 
         user = self._session.scalar(
-            select(UserModel).where(
-                UserModel.username == task.assignee.name
-            )
+            select(UserModel).where(UserModel.username == task.assignee.name)
         )
 
         if user is None:
-            raise TaskManagerError(
-                f"Không có username: {task.assignee.name!r}"
-            )
+            raise TaskManagerError(f"Không có username: {task.assignee.name!r}")
 
         row.title = task.title
         row.description = task.description
@@ -41,29 +39,19 @@ class TaskRepository:
         row.status = task.status.value
         row.priority = PRIORITY_RANK[task.priority]
         row.assignee = user
-        row.due_date = (
-            task.deadline.isoformat()
-            if task.deadline
-            else None
-        )
+        row.due_date = task.deadline.isoformat() if task.deadline else None
         row.created_at = task.created_at.isoformat(sep=" ")
 
     def _to_domain(self, row: TaskModel) -> Task:
-        priorities = {
-            rank: priority
-            for priority, rank in PRIORITY_RANK.items()
-        }
+        priorities = {rank: priority for priority, rank in PRIORITY_RANK.items()}
 
         if row.priority not in priorities:
             raise TaskManagerError(
-                f"Task {row.id}: priority={row.priority} "
-                "chưa có trong domain"
+                f"Task {row.id}: priority={row.priority} chưa có trong domain"
             )
 
         if row.assignee is None or row.created_at is None:
-            raise TaskManagerError(
-                f"Task {row.id}: thiếu assignee hoặc created_at"
-            )
+            raise TaskManagerError(f"Task {row.id}: thiếu assignee hoặc created_at")
 
         return Task(
             title=row.title,
@@ -72,25 +60,18 @@ class TaskRepository:
             status=TaskStatus(row.status),
             priority=priorities[row.priority],
             assignee=User(row.assignee.username),
-            deadline=(
-                date.fromisoformat(row.due_date)
-                if row.due_date
-                else None
-            ),
+            deadline=(date.fromisoformat(row.due_date) if row.due_date else None),
             created_at=datetime.fromisoformat(row.created_at),
         )
 
     def add(self, project_name: str, task: Task) -> int:
         projects = self._session.scalars(
-            select(ProjectModel).where(
-                ProjectModel.name == project_name
-            )
+            select(ProjectModel).where(ProjectModel.name == project_name)
         ).all()
 
         if len(projects) != 1:
             raise TaskManagerError(
-                f"Cần đúng một project tên {project_name!r}; "
-                f"tìm thấy {len(projects)}"
+                f"Cần đúng một project tên {project_name!r}; tìm thấy {len(projects)}"
             )
 
         row = TaskModel(project_id=projects[0].id)
@@ -142,3 +123,34 @@ class TaskRepository:
         self._session.flush()
 
         return True
+
+    def add_to_project(self, project_id: int, task: Task) -> int:
+        if self._session.get(ProjectModel, project_id) is None:
+            raise ProjectNotFoundError(project_id)
+        row = TaskModel(project_id=project_id)
+        self._copy_to_model(task, row)
+        self._session.add(row)
+        self._session.flush()
+        return row.id
+
+    def list_with_ids(
+        self,
+        status: str | None,
+        limit: int,
+        offset: int,
+        sort_by: str,
+        order: str,
+    ) -> builtins.list[tuple[int, Task]]:
+        columns = {
+            "id": TaskModel.id,
+            "priority": TaskModel.priority,
+            "created_at": TaskModel.created_at,
+        }
+        column = columns[sort_by]
+        statement = select(TaskModel).options(selectinload(TaskModel.assignee))
+        if status is not None:
+            statement = statement.where(TaskModel.status == status)
+        ordering = column.desc() if order == "desc" else column.asc()
+        statement = statement.order_by(ordering, TaskModel.id.asc())
+        rows = self._session.scalars(statement.offset(offset).limit(limit)).all()
+        return [(row.id, self._to_domain(row)) for row in rows]
