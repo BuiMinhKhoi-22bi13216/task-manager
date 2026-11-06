@@ -17,7 +17,9 @@ class TaskRepositoryPort(Protocol):
 
     def delete(self, task_id: int) -> bool: ...
 
-    def add_to_project(self, project_id: int, task: Task) -> int: ...
+    def add_to_project(
+        self, project_id: int, task: Task, creator_id: int | None = None
+    ) -> int: ...
 
     def list_with_ids(
         self,
@@ -26,4 +28,7 @@ class TaskRepositoryPort(Protocol):
         offset: int,
         sort_by: str,
         order: str,
+        user_id: int | None = None,
     ) -> builtins.list[tuple[int, Task]]: ...
+
+    def get_participant_ids(self, task_id: int) -> tuple[int | None, int] | None: ...

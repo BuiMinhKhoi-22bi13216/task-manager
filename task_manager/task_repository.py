@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 from datetime import date, datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from task_manager.exceptions import (
@@ -124,13 +124,18 @@ class TaskRepository:
 
         return True
 
-    def add_to_project(self, project_id: int, task: Task) -> int:
+    def add_to_project(
+        self, project_id: int, task: Task, creator_id: int | None = None
+    ) -> int:
         if self._session.get(ProjectModel, project_id) is None:
             raise ProjectNotFoundError(project_id)
-        row = TaskModel(project_id=project_id)
+
+        row = TaskModel(project_id=project_id, creator_id=creator_id)
         self._copy_to_model(task, row)
+
         self._session.add(row)
         self._session.flush()
+
         return row.id
 
     def list_with_ids(
@@ -140,6 +145,7 @@ class TaskRepository:
         offset: int,
         sort_by: str,
         order: str,
+        user_id: int | None = None,
     ) -> builtins.list[tuple[int, Task]]:
         columns = {
             "id": TaskModel.id,
@@ -147,10 +153,28 @@ class TaskRepository:
             "created_at": TaskModel.created_at,
         }
         column = columns[sort_by]
+
         statement = select(TaskModel).options(selectinload(TaskModel.assignee))
+
+        if user_id is not None:
+            statement = statement.where(
+                or_(TaskModel.creator_id == user_id, TaskModel.assignee_id == user_id)
+            )
+
         if status is not None:
             statement = statement.where(TaskModel.status == status)
+
         ordering = column.desc() if order == "desc" else column.asc()
         statement = statement.order_by(ordering, TaskModel.id.asc())
+
         rows = self._session.scalars(statement.offset(offset).limit(limit)).all()
+
         return [(row.id, self._to_domain(row)) for row in rows]
+
+    def get_participant_ids(self, task_id: int) -> tuple[int | None, int] | None:
+        row = self._session.get(TaskModel, task_id)
+
+        if row is None:
+            return None
+
+        return row.creator_id, row.assignee_id

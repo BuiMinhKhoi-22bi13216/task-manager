@@ -1,7 +1,11 @@
 from collections.abc import Iterable
 from typing import Any
 
-from task_manager.exceptions import TaskManagerError, TaskNotFoundError
+from task_manager.exceptions import (
+    PermissionDeniedError,
+    TaskManagerError,
+    TaskNotFoundError,
+)
 from task_manager.models import PRIORITY_RANK, Task, TaskStatus, User
 from task_manager.notifier import Notifier
 from task_manager.project import Project
@@ -58,7 +62,21 @@ class TaskService:
 
         return self._repository
 
-    def get_task(self, task_id: int) -> Task:
+    def _check_task_access(self, task_id: int, user_id: int) -> None:
+        participants = self._get_repository().get_participant_ids(task_id)
+
+        if participants is None:
+            raise TaskNotFoundError(task_id)
+
+        creator_id, assignee_id = participants
+
+        if user_id != creator_id and user_id != assignee_id:
+            raise PermissionDeniedError(str(user_id), "access", f"ID {task_id}")
+
+    def get_task(self, task_id: int, user_id: int | None = None) -> Task:
+        if user_id is not None:
+            self._check_task_access(task_id, user_id)
+
         task = self._get_repository().get_by_id(task_id)
 
         if task is None:
@@ -79,8 +97,10 @@ class TaskService:
         priority: int,
         task_type: str,
         assignee: str,
+        creator_id: int | None = None,
     ) -> tuple[int, Task]:
         priorities = {rank: value for value, rank in PRIORITY_RANK.items()}
+
         task = Task(
             title=title,
             description=description,
@@ -89,7 +109,9 @@ class TaskService:
             task_type=task_type,
             assignee=User(assignee),
         )
-        task_id = self._get_repository().add_to_project(project_id, task)
+
+        task_id = self._get_repository().add_to_project(project_id, task, creator_id)
+
         self.watch_task(task)
         return task_id, task
 
@@ -100,6 +122,7 @@ class TaskService:
         offset: int,
         sort_by: str,
         order: str,
+        user_id: int | None = None,
     ) -> list[tuple[int, Task]]:
         return self._get_repository().list_with_ids(
             status,
@@ -107,24 +130,35 @@ class TaskService:
             offset,
             sort_by,
             order,
+            user_id,
         )
 
-    def patch_task(self, task_id: int, changes: dict[str, Any]) -> Task:
-        task = self.get_task(task_id)
+    def patch_task(
+        self, task_id: int, changes: dict[str, Any], user_id: int | None = None
+    ) -> Task:
+        task = self.get_task(task_id, user_id)
+
         # Validate status before editing other fields. No automatic reopen.
         if "status" in changes:
             task.change_status(TaskStatus(changes["status"]))
+
         for field in ("title", "description", "task_type"):
             if field in changes:
                 setattr(task, field, changes[field])
+
         if "priority" in changes:
             priorities = {rank: value for value, rank in PRIORITY_RANK.items()}
             task.priority = priorities[changes["priority"]]
+
         if "assignee" in changes:
             task.assign_to(User(changes["assignee"]))
+
         self.update_task(task_id, task)
         return task
 
-    def delete_task(self, task_id: int) -> None:
+    def delete_task(self, task_id: int, user_id: int | None = None) -> None:
+        if user_id is not None:
+            self._check_task_access(task_id, user_id)
+
         if not self._get_repository().delete(task_id):
             raise TaskNotFoundError(task_id)

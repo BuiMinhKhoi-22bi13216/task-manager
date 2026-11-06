@@ -3,8 +3,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .exceptions import ProjectNotFoundError, TaskManagerError, TaskNotFoundError
-from .routers import projects, tasks, users, auth
+from .exceptions import (
+    PermissionDeniedError,
+    ProjectNotFoundError,
+    TaskManagerError,
+    TaskNotFoundError,
+)
+from .routers import auth, projects, tasks, users
 
 app = FastAPI(title="Task Manager")
 
@@ -119,6 +124,22 @@ def domain_error_handler(request: Request, exc: TaskManagerError) -> JSONRespons
             "error": {
                 "code": "DOMAIN_ERROR",
                 "message": str(exc),
+                "details": [],
+            }
+        },
+    )
+
+
+@app.exception_handler(PermissionDeniedError)
+def permission_denied_handler(
+    request: Request, exc: PermissionDeniedError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=403,
+        content={
+            "error": {
+                "code": "PERMISSION_DENIED",
+                "message": "Bạn không có quyền truy cập task này",
                 "details": [],
             }
         },
