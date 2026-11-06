@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .exceptions import ProjectNotFoundError, TaskManagerError, TaskNotFoundError
-from .routers import projects, tasks, users
+from .routers import projects, tasks, users, auth
 
 app = FastAPI(title="Task Manager")
 
@@ -92,6 +92,7 @@ def unexpected_exception_handler(
 app.include_router(tasks.router)
 app.include_router(projects.router)
 app.include_router(users.router)
+app.include_router(auth.router)
 
 
 @app.exception_handler(ProjectNotFoundError)
