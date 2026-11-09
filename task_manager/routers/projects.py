@@ -2,7 +2,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Response
 
-from ..dependencies import get_project_service
+from ..dependencies import get_current_user, get_project_service
+from ..orm_models import UserModel
 from ..project_service import ProjectService
 from ..schemas import ProjectCreate, ProjectResponse, ProjectUpdate
 
@@ -41,7 +42,9 @@ def update_project(
 
 @router.delete("/{project_id}", status_code=204)
 def delete_project(
-    project_id: int, service: ProjectService = Depends(get_project_service)
+    project_id: int,
+    current_user: UserModel = Depends(get_current_user),
+    service: ProjectService = Depends(get_project_service),
 ) -> Response:
-    service.delete_project(project_id)
+    service.delete_project(project_id, current_user.id, current_user.username)
     return Response(status_code=204)
