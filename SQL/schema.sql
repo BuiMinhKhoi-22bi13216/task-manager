@@ -62,3 +62,17 @@ ON tasks(assignee_id);
 
 CREATE INDEX idx_tasks_status
 ON tasks(status);
+
+CREATE TABLE task_attachments (
+    id INTEGER PRIMARY KEY,
+    task_id INTEGER NOT NULL,
+    original_filename TEXT NOT NULL,
+    stored_filename TEXT NOT NULL UNIQUE,
+
+    FOREIGN KEY (task_id)
+        REFERENCES tasks(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX ix_task_attachments_task_id
+ON task_attachments(task_id);

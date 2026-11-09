@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 
 import jwt
@@ -16,6 +17,7 @@ from .task_repository import TaskRepository
 from .task_service import TaskService
 from .user_repository import UserRepository
 
+logger = logging.getLogger(__name__)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
@@ -26,6 +28,11 @@ def get_db() -> Iterator[Session]:
         db.commit()
     except Exception:
         db.rollback()
+        for path in db.info.get("pending_uploads", []):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                logger.exception("Không thể dọn file upload: %s", path)
         raise
     finally:
         db.close()
