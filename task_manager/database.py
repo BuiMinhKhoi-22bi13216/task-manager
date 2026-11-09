@@ -1,21 +1,19 @@
-import os
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import create_engine, event
+from sqlalchemy.engine import URL
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "SQL" / "task_manager.db"
+from .config import PROJECT_ROOT, load_settings
+
+settings = load_settings()
+DB_PATH = PROJECT_ROOT / settings.db_path
 
 if not DB_PATH.is_file():
     raise FileNotFoundError(f"Không tìm thấy database: {DB_PATH}")
 
-# Log SQL mặc định TẮT. Bật bằng: TASK_MANAGER_SQL_ECHO=1 python <script>
-SQL_ECHO = os.getenv("TASK_MANAGER_SQL_ECHO", "").lower() in {"1", "true", "yes"}
-
 engine = create_engine(
-    f"sqlite:///{DB_PATH}",
-    echo=SQL_ECHO,
+    URL.create("sqlite", database=str(DB_PATH)),
+    echo=settings.sql_echo,
     connect_args={"check_same_thread": False},
 )
 

@@ -1,4 +1,3 @@
-
 # Virtual environment
 .venv/
 venv/
@@ -10,6 +9,7 @@ __pycache__/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Test cache
 .pytest_cache/
@@ -22,3 +22,6 @@ __pycache__/
 *.log
 
 *.egg-info/
+
+# Task attachment files
+/uploads/
