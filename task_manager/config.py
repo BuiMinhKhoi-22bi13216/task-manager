@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     token_expire_minutes: int = Field(gt=0)
     upload_dir: Path
     sql_echo: bool
+    redis_url: str | None = None
     cors_origins: list[str]
     external_api_url: AnyHttpUrl
     external_api_timeout_seconds: float = Field(gt=0, allow_inf_nan=False)
