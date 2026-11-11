@@ -1,8 +1,9 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, Response
+from sqlalchemy.orm import Session
 
-from ..dependencies import get_current_user, get_project_service
+from ..dependencies import get_current_user, get_db, get_project_service
 from ..orm_models import UserModel
 from ..project_service import ProjectService
 from ..schemas import ProjectCreate, ProjectResponse, ProjectUpdate
@@ -19,14 +20,16 @@ def list_projects(
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
-    project_id: int, service: ProjectService = Depends(get_project_service)
+    project_id: int,
+    service: ProjectService = Depends(get_project_service),
 ) -> dict[str, Any]:
     return service.get_project(project_id)
 
 
 @router.post("", status_code=201, response_model=ProjectResponse)
 def create_project(
-    project: ProjectCreate, service: ProjectService = Depends(get_project_service)
+    project: ProjectCreate,
+    service: ProjectService = Depends(get_project_service),
 ) -> dict[str, Any]:
     return service.create_project(**project.model_dump())
 
@@ -37,7 +40,10 @@ def update_project(
     project: ProjectUpdate,
     service: ProjectService = Depends(get_project_service),
 ) -> dict[str, Any]:
-    return service.update_project(project_id, project.model_dump(exclude_unset=True))
+    return service.update_project(
+        project_id,
+        project.model_dump(exclude_unset=True),
+    )
 
 
 @router.delete("/{project_id}", status_code=204)
@@ -45,6 +51,12 @@ def delete_project(
     project_id: int,
     current_user: UserModel = Depends(get_current_user),
     service: ProjectService = Depends(get_project_service),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
-    service.delete_project(project_id, current_user.id, current_user.username)
+    service.delete_project(
+        project_id,
+        current_user.id,
+        current_user.username,
+    )
+    db.info["task_cache_scopes"] = None
     return Response(status_code=204)

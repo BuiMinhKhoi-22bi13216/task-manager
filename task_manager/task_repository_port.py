@@ -29,6 +29,7 @@ class TaskRepositoryPort(Protocol):
         sort_by: str,
         order: str,
         user_id: int | None = None,
+        project_id: int | None = None,
     ) -> builtins.list[tuple[int, Task]]: ...
 
     def get_participant_ids(self, task_id: int) -> tuple[int | None, int] | None: ...

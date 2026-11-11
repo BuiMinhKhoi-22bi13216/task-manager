@@ -13,6 +13,7 @@ from .project_repository import ProjectRepository
 from .project_service import ProjectService
 from .security import decode_access_token
 from .strategies import PrioritySortStrategy
+from .task_cache import invalidate
 from .task_repository import TaskRepository
 from .task_service import TaskService
 from .user_repository import UserRepository
@@ -26,6 +27,7 @@ def get_db() -> Iterator[Session]:
     try:
         yield db
         db.commit()
+        invalidate(db.info.get("task_cache_scopes", ()))
     except Exception:
         db.rollback()
         for path in db.info.get("pending_uploads", []):
@@ -47,7 +49,10 @@ def get_task_repository(
 def get_task_service(
     repository: TaskRepository = Depends(get_task_repository),
 ) -> TaskService:
-    return TaskService(PrioritySortStrategy(), repository=repository)
+    return TaskService(
+        PrioritySortStrategy(),
+        repository=repository,
+    )
 
 
 def get_project_repository(
@@ -74,22 +79,29 @@ def get_auth_service(
     return AuthService(repository)
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    repository: UserRepository = Depends(get_user_repository),
-) -> UserModel:
-    credentials_error = HTTPException(
+def invalid_credentials() -> HTTPException:
+    return HTTPException(
         status_code=401,
         detail="Token không hợp lệ hoặc đã hết hạn",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def get_token_user_id(
+    token: str = Depends(oauth2_scheme),
+) -> int:
     try:
         payload = decode_access_token(token)
-        user_id = int(payload["sub"])
+        return int(payload["sub"])
     except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
-        raise credentials_error from exc
+        raise invalid_credentials() from exc
 
+
+def get_current_user(
+    user_id: int = Depends(get_token_user_id),
+    repository: UserRepository = Depends(get_user_repository),
+) -> UserModel:
     user = repository.get_by_id(user_id)
     if user is None:
-        raise credentials_error
+        raise invalid_credentials()
     return user

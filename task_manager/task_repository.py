@@ -146,6 +146,7 @@ class TaskRepository:
         sort_by: str,
         order: str,
         user_id: int | None = None,
+        project_id: int | None = None,
     ) -> builtins.list[tuple[int, Task]]:
         columns = {
             "id": TaskModel.id,
@@ -160,6 +161,9 @@ class TaskRepository:
             statement = statement.where(
                 or_(TaskModel.creator_id == user_id, TaskModel.assignee_id == user_id)
             )
+
+        if project_id is not None:
+            statement = statement.where(TaskModel.project_id == project_id)
 
         if status is not None:
             statement = statement.where(TaskModel.status == status)

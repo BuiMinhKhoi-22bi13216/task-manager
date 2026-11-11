@@ -123,6 +123,7 @@ class TaskService:
         sort_by: str,
         order: str,
         user_id: int | None = None,
+        project_id: int | None = None,
     ) -> list[tuple[int, Task]]:
         return self._get_repository().list_with_ids(
             status,
@@ -131,6 +132,7 @@ class TaskService:
             sort_by,
             order,
             user_id,
+            project_id,
         )
 
     def patch_task(
